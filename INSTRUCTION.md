@@ -46,18 +46,43 @@ Pod status should be `Running`.
 
 ---
 
-### 5. Validate Volume Mounts
+### 5. Validate Volume Mounts and ConfigMap/Secret Content
 
-Exec into the running pod and check the mounted directories:
+#### **ConfigMap Validation**
+
+List files in `/app/configs` and check their order (lexical order is enforced by naming, e.g., `01-app.yaml`, `02-db.yaml`):
 
 ```bash
-kubectl exec -it <pod-name> -n todoapp -- /bin/sh
-ls /app/data
-ls /app/configs
-ls /app/secrets
+kubectl exec -n todoapp <pod-name> -- sh -c "ls -1 /app/configs"
 ```
 
-You should see files or directories as expected.
+Verify the contents of each file:
+
+```bash
+kubectl exec -n todoapp <pod-name> -- sh -c "for f in /app/configs/*; do echo --- \$f ---; cat \"\$f\"; done"
+```
+
+**Expected:**  
+- Files appear in lexical order.
+- File contents match the ConfigMap data.
+
+#### **Secret Validation**
+
+List files in `/app/secrets`:
+
+```bash
+kubectl exec -n todoapp <pod-name> -- sh -c "ls -1 /app/secrets"
+```
+
+Verify the contents of each secret file:
+
+```bash
+kubectl exec -n todoapp <pod-name> -- sh -c "for f in /app/secrets/*; do echo --- \$f ---; cat \"\$f\"; done"
+```
+
+**Expected:**  
+- Secret files are present.
+- File contents match the Secret data.
 
 ---
 
@@ -83,9 +108,16 @@ kubectl delete namespace todoapp
 
 ---
 
-**Note:**  
-- Update resource names if you changed them.
-- For troubleshooting, check pod logs:
+### 8. Troubleshooting
+
+Check pod logs for errors:
 
 ```bash
-kubectl logs <pod-name> -n
+kubectl logs <pod-name> -n todoapp
+```
+
+---
+
+**Note:**  
+- Update resource names if you changed them.
+- If you use numeric prefixes in ConfigMap keys, files will be ordered lexically in
